@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+BlackBone
+/.vs/AzureLauncher/FileContentIndex
+/.vs/AzureLauncher/v17
