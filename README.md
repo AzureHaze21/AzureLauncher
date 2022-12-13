@@ -22,4 +22,4 @@ You can install all required dependencies using [vcpkg](https://vcpkg.io/en/gett
 
 ## 📔 Todo
 
-Proxy support
+- Proxy support
