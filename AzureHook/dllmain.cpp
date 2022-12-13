@@ -61,8 +61,8 @@ BOOL WINAPI hkCreateProcess(
         lpEnvironment,
         lpCurrentDirectory,
         lpStartupInfo,
-       lpProcessInformation
-    );
+        lpProcessInformation
+        );
 
     blackbone::Process childProc;
 
@@ -71,13 +71,13 @@ BOOL WINAPI hkCreateProcess(
 
     if (lpCommandLine != nullptr /*&& (std::wstring(lpCommandLine).find(L"--utility-sub-type=network.mojom.NetworkService") != std::wstring::npos)*/)
     {
-        if (auto [success, mod] = childProc.mmap().MapImage(globals::moduleName); mod)
+        if (auto [success, mod] = childProc.mmap().MapImage(globals::modulePath); mod)
         {
             if (auto [success, fn] = childProc.modules().GetExport(mod.value(), "HookChild"); fn)
             {
                 blackbone::RemoteFunction<decltype(&HookChild)> pFN(childProc, blackbone::ptr_t(fn->procAddress));
 
-                pFN.Call({ globals::launcherPort, globals::adapterIp.data(), globals::login.data(), globals::password.data(), globals::bSpoofId });
+                pFN.Call({ globals::modulePath.data(), globals::adapterIp.data(), globals::launcherPort, globals::login.data(), globals::password.data(), globals::bSpoofId});
             }
         }
     }
@@ -251,8 +251,9 @@ int WINAPI hkConnect(SOCKET s, sockaddr* addr, int namelen)
     return PLH::FnCast(globals::oConnect, &connect)(s, addr, namelen);
 }
 
-extern "C" __declspec(dllexport) void HookChild(const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bSpoofId)
+extern "C" __declspec(dllexport) void HookChild(const wchar_t* modulePath, const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bSpoofId)
 {
+    globals::modulePath = modulePath,
     globals::launcherPort = launcherPort;
     globals::adapterIp = adapterIp;
     globals::login = login;
@@ -260,7 +261,7 @@ extern "C" __declspec(dllexport) void HookChild(const char* adapterIp, uint16_t 
     globals::bSpoofId = bSpoofId;
 
     globals::detourRecv.emplace((uint64_t)&recv, (uint64_t)hkRecv, &globals::oRecv, globals::dis.value());
-    globals::detourRecv->hook();   
+    globals::detourRecv->hook();
 
     globals::detourSend.emplace((uint64_t)&WSASend, (uint64_t)hkSend, &globals::oSend, globals::dis.value());
     globals::detourSend->hook();
@@ -279,13 +280,14 @@ extern "C" __declspec(dllexport) void HookChild(const char* adapterIp, uint16_t 
 
 }
 
-extern "C" __declspec(dllexport) void HookProcess(const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bUseMod, int clientArch, bool bSpoofId)
+extern "C" __declspec(dllexport) void HookProcess(const wchar_t* modulePath, const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bUseMod, int clientArch, bool bSpoofId)
 {
     //    
     //AllocConsole();
     //freopen("CONOUT$", "w", stdout);
     //
 
+    globals::modulePath = modulePath;
     globals::launcherPort = launcherPort;
     globals::adapterIp = adapterIp;
     globals::login = login;
@@ -307,7 +309,7 @@ extern "C" __declspec(dllexport) void HookProcess(const char* adapterIp, uint16_
 
     if (clientArch == 1) // legacy
     {
-        HookChild(adapterIp, launcherPort, login, password, false);
+        HookChild(modulePath, adapterIp, launcherPort, login, password, false);
     }
     else
     {
@@ -321,10 +323,10 @@ extern "C" __declspec(dllexport) void HookProcess(const char* adapterIp, uint16_
     StartEmulator(globals::launcherPort);
 }
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+BOOL APIENTRY DllMain(HMODULE hModule,
+    DWORD  ul_reason_for_call,
+    LPVOID lpReserved
+)
 {
     switch (ul_reason_for_call)
     {

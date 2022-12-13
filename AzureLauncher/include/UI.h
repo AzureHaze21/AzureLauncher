@@ -33,6 +33,14 @@ static bool CreateAndHook(std::wstring const& imgPath, const char* ip, const cha
 		MessageBoxA(0, "File not found", "Error", 0);
 		return false;
 	}
+	
+	const auto moduleAbsolutePath = std::filesystem::current_path().append("AzureHook.dll");
+
+	if (!std::filesystem::exists(moduleAbsolutePath))
+	{
+		MessageBoxA(0, "Dll not found", "Error", 0);
+		return false;
+	}
 
 	auto t = imgPath.substr(imgPath.size() - std::size(L"Dofus.exe") + 1, std::size(L"Dofus.exe"));
 	int clientArch = !imgPath.substr(imgPath.size() - std::size(L"Dofus.exe") + 1, std::size(L"Dofus.exe")).compare(L"Dofus.exe") ? 1 : 0;
@@ -43,13 +51,13 @@ static bool CreateAndHook(std::wstring const& imgPath, const char* ip, const cha
 		return false;
 	}
 
-	if (auto [mmapSuccess, mod] = proc.mmap().MapImage(imgPath); NT_SUCCESS(mmapSuccess) && mod)
+	if (auto [mmapSuccess, mod] = proc.mmap().MapImage(moduleAbsolutePath.wstring()); NT_SUCCESS(mmapSuccess) && mod)
 	{
 		if (auto [success, fn] = proc.modules().GetExport(*mod, "HookProcess"); NT_SUCCESS(success) || !fn)
 		{
 			static int launcherPort = 26120;
-			blackbone::RemoteFunction<void(__cdecl*)(const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bUseMod, int clientArch, bool bSpoofId)> hkFn(proc, blackbone::ptr_t(fn->procAddress));
-			hkFn.Call({ ip, launcherPort++, login, password, bUseMod, clientArch, bSpoofId });
+			blackbone::RemoteFunction<void(__cdecl*)(const wchar_t, const char*, uint16_t, const char*, const char*, bool, int, bool)> hkFn(proc, blackbone::ptr_t(fn->procAddress));
+			hkFn.Call({ moduleAbsolutePath.wstring().data(), ip, launcherPort++, login, password, bUseMod, clientArch, bSpoofId });
 		}
 		else
 		{

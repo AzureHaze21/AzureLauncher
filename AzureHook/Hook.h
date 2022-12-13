@@ -33,7 +33,7 @@ namespace globals
     inline std::optional<PLH::x86Detour> detourWriteFile;
 
     static std::string login, password;
-    static std::wstring moduleName{ L"AzureHook.dll" };
+    static std::wstring modulePath;
     static SOCKET launcherSocket{ INVALID_SOCKET };
     static SOCKET gameSocket{ INVALID_SOCKET };
     static HANDLE loaderHandle = INVALID_HANDLE_VALUE;
@@ -46,5 +46,5 @@ namespace globals
     static std::vector<uint8_t> loaderBytes;
 }
 
-extern "C" __declspec(dllexport) void HookChild(const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bSpoofId);
-extern "C" __declspec(dllexport) void HookProcess(const char* adapterIp, uint16_t launcherPort, const char*, const char* password, bool bUseMod, int clientArch, bool bSpoofId);
+extern "C" __declspec(dllexport) void HookChild(const wchar_t* modulePath, const char* adapterIp, uint16_t launcherPort, const char* login, const char* password, bool bSpoofId);
+extern "C" __declspec(dllexport) void HookProcess(const wchar_t* modulePath, const char* adapterIp, uint16_t launcherPort, const char*, const char* password, bool bUseMod, int clientArch, bool bSpoofId);
