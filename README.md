@@ -13,6 +13,8 @@ Launcher and injector for Dofus Retro
 
 ## 🧱 Dependencies
 
+[DirectX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812)
+
 You can install all required dependencies using [vcpkg](https://vcpkg.io/en/getting-started.html)
 
 - boost-asio
